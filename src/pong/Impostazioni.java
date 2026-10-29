@@ -20,6 +20,10 @@ public record Impostazioni(int puntiPerVincere, int scartoMinimo, int velocitaPa
     /** Le impostazioni standard: 11 punti per vincere, scarto minimo 2, velocità della palla 5. */
     public static final Impostazioni STANDARD = new Impostazioni(11, 2, 5);
 
+    private static boolean nellIntervallo(int valore, int min, int max) {
+        return valore >= min && valore <= max;
+    }
+
     /**
      * Il costruttore (lezione 7: un record che nasce giusto).
      * Promette: se i tre valori sono nei loro intervalli, le impostazioni con quei valori.
@@ -28,7 +32,21 @@ public record Impostazioni(int puntiPerVincere, int scartoMinimo, int velocitaPa
      * dice quale valore è sbagliato e perché.
      */
     public Impostazioni {
-        // scrivete qui
+        if (!nellIntervallo(puntiPerVincere, 1, 99)) {
+            throw new IllegalArgumentException (
+                "Valore non valido, i punti per vincere sono " + puntiPerVincere + ", ma dovrebbero essere compresi tra 1 e 99"
+            );
+        }
+        if (!nellIntervallo(scartoMinimo, 1, 10)) {
+            throw new IllegalArgumentException (
+                "Valore non valido, lo scarto minimo è " + scartoMinimo + ", ma dovrebbe essere compreso tra 1 e 10"
+            );
+        }
+        if (!nellIntervallo(velocitaPalla, 1, 20)) {
+            throw new IllegalArgumentException (
+                "Valore non valido, la velocità della palla è " + velocitaPalla + ", ma dovrebbe essere compresa tra 1 e 20"
+            );
+        }
     }
 
     /**
@@ -51,7 +69,92 @@ public record Impostazioni(int puntiPerVincere, int scartoMinimo, int velocitaPa
      * Se ci sono errori in più righe, il messaggio è quello della riga più in alto.
      */
     public static Impostazioni leggi(List<String> righe) {
-        return STANDARD; // scrivete qui
+        int puntiPerVincere = STANDARD.puntiPerVincere();
+        int scartoMinimo = STANDARD.scartoMinimo();
+        int velocitaPalla = STANDARD.velocitaPalla();
+        boolean vistoPunti = false;
+        boolean vistoScarto = false;
+        boolean vistoVelocita = false;
+
+        for (int i=0; i<righe.size(); i++) {
+            String riga = righe.get(i).trim();
+            int numeroRiga = i+1;
+
+            if (riga.isEmpty() || riga.startsWith("#")) {
+                continue;
+            }
+
+            int posizioneUguale = riga.indexOf("=");
+            if (posizioneUguale < 0) {
+                throw new IllegalArgumentException(
+                    "riga " + numeroRiga + ": non c'è l'uguale"
+                );
+            }
+
+            String chiave = riga.substring(0, posizioneUguale).trim();
+            String valore = riga.substring(posizioneUguale + 1).trim();
+
+            switch(chiave) {
+                case "puntiPerVincere" -> {
+                    puntiPerVincere = leggiIntero(chiave, valore, numeroRiga);
+                    if (vistoPunti) {
+                        throw new IllegalArgumentException(
+                            "riga " + numeroRiga + ": chiave puntiPerVincere è scritta più di una volta"
+                        );
+                    }
+                    if (!nellIntervallo(puntiPerVincere, 1, 99)) {
+                        throw new IllegalArgumentException(
+                            "riga " + numeroRiga + ": puntiPerVincere deve essere compreso tra 1 e 99"
+                        );
+                    }
+                    vistoPunti = true;
+                }
+                case "scartoMinimo" -> {
+                    scartoMinimo = leggiIntero(chiave, valore, numeroRiga);
+                    if (vistoScarto) {
+                        throw new IllegalArgumentException(
+                            "riga " + numeroRiga + ": chiave scartoMinimo è scritta più di una volta"
+                        );
+                    }
+                    if (!nellIntervallo(scartoMinimo, 1, 10)) {
+                        throw new IllegalArgumentException(
+                            "riga " + numeroRiga + ": scartoMinimo deve essere compreso tra 1 e 10"
+                        );
+                    }
+                    vistoScarto = true;
+                }
+                case "velocitaPalla" -> {
+                    velocitaPalla = leggiIntero(chiave, valore, numeroRiga);
+                    if (vistoVelocita) {
+                        throw new IllegalArgumentException(
+                            "riga " + numeroRiga + ": chiave velocitaPalla è scritta più di una volta"
+                        );
+                    }
+                    if (!nellIntervallo(velocitaPalla, 1, 20)) {
+                        throw new IllegalArgumentException(
+                            "riga " + numeroRiga + ": velocitaPalla deve essere compreso tra 1 e 20"
+                        );
+                    }
+                    vistoVelocita = true;
+                }
+                default -> {
+                    throw new IllegalArgumentException(
+                        "riga " + numeroRiga + ": la chiave non è una tra puntiPerVincere, scartoMinimo e velocitaPalla"
+                    );
+                }
+            }
+        }
+
+        return new Impostazioni(puntiPerVincere, scartoMinimo, velocitaPalla);
+    }
+
+    private static int leggiIntero(String chiave, String valore, int riga) {
+        try {
+            return Integer.parseInt(valore);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                    "riga " + riga + ": Valore non valido per " + chiave + ": \"" + valore + "\" (serve un numero intero)");
+        }
     }
 
     /**
